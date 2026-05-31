@@ -6,8 +6,9 @@ mod datoteka;
 /*
 TODO LIST: 
 - [ ] UI-(ratatui)
-- [ ] rewrite datoteka.rs
+- [X] rewrite datoteka.rs
 - [ ] tracking branja glede na teden, mesec ... 
+- [ ] exeptions
 */
 
 fn main() {
