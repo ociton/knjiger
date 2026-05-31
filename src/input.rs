@@ -39,3 +39,25 @@ pub fn vnesi_prebrane_strani(vse_strani: u32, prej_prebrane_strani: u32) -> u32 
         }
     }
 }
+
+pub fn vnesi_vse_strani(prebrane_strani: u32) -> u32 {
+    loop {
+        let mut nove_vse_strani = String::new();
+        io::stdin()
+            .read_line(&mut nove_vse_strani)
+            .expect("Faled to input");
+        match nove_vse_strani.trim().parse() {
+            Ok(nove_vse_strani) => {
+                if nove_vse_strani >= prebrane_strani {
+                    return nove_vse_strani;
+                } else {
+                    println!(
+                        "Stevilo vseh strani, nesme biti manjše od prebranih strani ({}) \nPoiskusi še enkrat:", prebrane_strani);
+                }
+            }
+            Err(_) => {
+                println!(" Sprejemljive le številke,\n Poskusi še enkrat:")
+            }
+        }
+    }
+}

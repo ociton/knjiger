@@ -89,24 +89,56 @@ fn spremeni_knjigo_page(knjige: &mut Vec<Knjiga>) {
         let stevilka_knjige = izberi_knjigo(knjige, "Številka knjige, ki jo želite spremeniti");
         let knjiga_stara: &Knjiga = &knjige[stevilka_knjige as usize];
 
-        println!(" Vnesite nov naslov (prejšni: {})", knjiga_stara.naslov);
-        let naslov_nov = vnesi_string();
-        println!(" Vnesite število vseh strani (prej: {})", knjiga_stara.vse);
-        let vse_strani_nov = vnesi_st();
-        println!(
-            " Vnesite število prebranih strani (prej: {})",
-            knjiga_stara.prebrano
-        );
-        let prebrane_nov = vnesi_prebrane_strani(vse_strani_nov, 0);
+        // println!(" Vnesite nov naslov (prejšni: {})", knjiga_stara.naslov);
+        // let naslov_nov = vnesi_string();
+        // println!(" Vnesite število vseh strani (prej: {})", knjiga_stara.vse);
+        // let vse_strani_nov = vnesi_st();
+        // println!(
+        //     " Vnesite število prebranih strani (prej: {})",
+        //     knjiga_stara.prebrano
+        // );
+        // let prebrane_nov = vnesi_prebrane_strani(vse_strani_nov, 0);
 
-        let knjiga_nov = Knjiga {
-            naslov: naslov_nov,
-            prebrano: prebrane_nov,
-            vse: vse_strani_nov,
-        };
+        // let knjiga_nov = Knjiga {
+        //     naslov: naslov_nov,
+        //     prebrano: prebrane_nov,
+        //     vse: vse_strani_nov,
+        // };
 
-        knjige[stevilka_knjige as usize] = knjiga_nov;
+        println!(" Kaj želite spremeniti?");
+        println!(" 1. Naslov knjige ({})", knjiga_stara.naslov);
+        println!(" 2. Prebrane strani ({})", knjiga_stara.prebrano);
+        println!(" 3. Vse strani knjige ({})", knjiga_stara.vse);
+
+        loop {
+            let izbira = vnesi_st();
+            match izbira {
+                1 => {
+                    println!(" Vnesite nov naslov ({}):", knjiga_stara.naslov);
+                    let nov_naslov = vnesi_string();
+                    knjige[stevilka_knjige as usize].naslov = nov_naslov;
+                    break;
+                },
+                2 => {
+                    println!(" Vnesite prebrane strani ({}):", knjiga_stara.prebrano);
+                    let nov_prebrane = vnesi_prebrane_strani(knjiga_stara.vse, 0);
+                    knjige[stevilka_knjige as usize].prebrano = nov_prebrane;
+                    break;
+                },
+                3 => {
+                    println!(" Vnesite vse strani knjige ({}):", knjiga_stara.vse);
+                    let nov_vse = vnesi_vse_strani(knjiga_stara.prebrano);
+                    knjige[stevilka_knjige as usize].vse = nov_vse;
+                    break;
+                },
+                _ => {
+                    println!("Neprimeren vnos, poskusite ponovno:")
+                }
+            }
+        }
+
         shrani_knjige(knjige)
+
     } else {
         println!();
         println!(" Ni knjig, za jih spremeniti");
