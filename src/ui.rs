@@ -89,22 +89,6 @@ fn spremeni_knjigo_page(knjige: &mut Vec<Knjiga>) {
         let stevilka_knjige = izberi_knjigo(knjige, "Številka knjige, ki jo želite spremeniti");
         let knjiga_stara: &Knjiga = &knjige[stevilka_knjige as usize];
 
-        // println!(" Vnesite nov naslov (prejšni: {})", knjiga_stara.naslov);
-        // let naslov_nov = vnesi_string();
-        // println!(" Vnesite število vseh strani (prej: {})", knjiga_stara.vse);
-        // let vse_strani_nov = vnesi_st();
-        // println!(
-        //     " Vnesite število prebranih strani (prej: {})",
-        //     knjiga_stara.prebrano
-        // );
-        // let prebrane_nov = vnesi_prebrane_strani(vse_strani_nov, 0);
-
-        // let knjiga_nov = Knjiga {
-        //     naslov: naslov_nov,
-        //     prebrano: prebrane_nov,
-        //     vse: vse_strani_nov,
-        // };
-
         println!(" Kaj želite spremeniti?");
         println!(" 1. Naslov knjige ({})", knjiga_stara.naslov);
         println!(" 2. Prebrane strani ({})", knjiga_stara.prebrano);
