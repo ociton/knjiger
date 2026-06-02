@@ -16,10 +16,7 @@ use crate::knjiga::*;
 pub fn render(frame: &mut Frame, app: &mut AppState) {
     match app.screen {
 	Screen::HomePage => rander_home_page(frame, app),
-	Screen::DodajKnjigoPage => rander_dodaj_knjigo(frame, app),
-	Screen::IzbrisiKnjigoPage => rander_izbrisi_knjigo(frame, app),
 	Screen::IzpisiKnjigePage => rander_izpisi_knjige(frame, app),
-	Screen::SpremeniKnjigoPage => rander_spremeni_knjigo(frame, app),
 	Screen::VnesiBranjePage => rander_vnesi_branje(frame, app),
     }
 }
@@ -40,10 +37,6 @@ fn rander_home_page(frame: &mut Frame, app: &mut AppState) {
     frame.render_widget(title.centered(), top);
     rander_list(frame, app, main, items);
 }
-
-fn rander_dodaj_knjigo(frame: &mut Frame, app: &AppState) {}
-
-fn rander_izbrisi_knjigo(frame: &mut Frame, app: &AppState) {}
 
 fn rander_izpisi_knjige(frame: &mut Frame, app: &mut AppState) {
 
