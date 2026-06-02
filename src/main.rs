@@ -1,6 +1,7 @@
 use color_eyre::eyre::Result;
 use crossterm::event;
 use crossterm::event::Event;
+use datoteka::csv_v_vektor;
 use crate::app::Screen;
 use crate::app::AppState;
 
@@ -25,14 +26,20 @@ fn main() -> Result<()> {
     let mut app = AppState {
         vrstica: 0,
         screen: Screen::HomePage,
+	knjige: csv_v_vektor(),
+	exited: false,
     };
     
     loop {
 	terminal.draw(|f| ui::render(f, &app)).unwrap();
+	
+	if app.exited {
+	    break;
+	}
 
 	if let Event::Key(key) = event::read()? {
 	    if key.code == event::KeyCode::Esc {
-		break;
+		app.exited = true;
 	    }
             app.handle_input(key.code);
 	}

@@ -2,6 +2,7 @@ use std::fs;
 
 use crate::input::*;
 use crate::knjiga::*;
+use crate::app::AppState;
 
 pub fn csv_v_vektor() -> Vec<Knjiga> {
     let vsebina: String = fs::read_to_string("knjige.csv").unwrap_or_default();
@@ -20,7 +21,7 @@ pub fn csv_v_vektor() -> Vec<Knjiga> {
     return knjige;
 }
 
-pub fn shrani_knjige(knjige: &mut Vec<Knjiga>) {
+pub fn shrani_knjige(knjige: &Vec<Knjiga>) {
     let mut vsebina = String::new();
     for knjiga in knjige {
         vsebina.push_str(&format!(
@@ -31,22 +32,22 @@ pub fn shrani_knjige(knjige: &mut Vec<Knjiga>) {
     fs::write("knjige.csv", vsebina).expect("Napaka pri pisanju v datoteko");
 }
 
-pub fn izberi_knjigo(knjige: &mut Vec<Knjiga>, prompt: &str) -> u32 {
-    for (index, knjiga) in knjige.iter().enumerate() {
-        println!(
-            " {}. {} ~ {}/{}",
-            index, knjiga.naslov, knjiga.prebrano, knjiga.vse
-        );
-    }
-    println!();
-    println!("{}", prompt);
-    println!();
-    loop {
-        let izbrnana_knjiga = vnesi_st();
-        if izbrnana_knjiga as i64 <= knjige.len() as i64 - 1 {
-            return izbrnana_knjiga;
-        } else {
-            println!("Vnesite primerno številko:")
-        }
-    }
-}
+// pub fn izberi_knjigo(knjige: &mut Vec<Knjiga>, prompt: &str) -> u32 {
+//     for (index, knjiga) in knjige.iter().enumerate() {
+//         println!(
+//             " {}. {} ~ {}/{}",
+//             index, knjiga.naslov, knjiga.prebrano, knjiga.vse
+//         );
+//     }
+//     println!();
+//     println!("{}", prompt);
+//     println!();
+//     loop {
+//         let izbrnana_knjiga = vnesi_st();
+//         if izbrnana_knjiga as i64 <= knjige.len() as i64 - 1 {
+//             return izbrnana_knjiga;
+//         } else {
+//             println!("Vnesite primerno številko:")
+//         }
+//     }
+// }

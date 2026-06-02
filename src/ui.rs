@@ -13,6 +13,7 @@ pub fn render(frame: &mut Frame, app: &AppState) {
     match app.screen {
 	Screen::HomePage => rander_home_page(frame, app),
 	Screen::DodajKnjigoPage => rander_dodaj_knjigo(frame, app),
+	Screen::IzbrisiKnjigoPage => rander_izbrisi_knjigo(frame, app),
 	Screen::IzpisiKnjigePage => rander_izpisi_knjige(frame, app),
 	Screen::SpremeniKnjigoPage => rander_spremeni_knjigo(frame, app),
 	Screen::VnesiBranjePage => rander_vnesi_branje(frame, app),
@@ -22,7 +23,7 @@ pub fn render(frame: &mut Frame, app: &AppState) {
 fn rander_home_page(frame: &mut Frame, app: &AppState) {
     let mut text = String::new();
 
-    for (i, item) in MAIN_MENU_VSEBINA.iter().enumerate() {
+    for (i, item) in HOME_PAGE_VSEBINA.iter().enumerate() {
         if i == app.vrstica {
             text.push_str(&format!("> {}\n", item));
         } else {
@@ -38,6 +39,8 @@ fn rander_home_page(frame: &mut Frame, app: &AppState) {
 }
 
 fn rander_dodaj_knjigo(frame: &mut Frame, app: &AppState) {}
+
+fn rander_izbrisi_knjigo(frame: &mut Frame, app: &AppState) {}
 
 fn rander_izpisi_knjige(frame: &mut Frame, app: &AppState) {}
 
