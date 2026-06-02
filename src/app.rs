@@ -47,17 +47,17 @@ impl AppState {
 
     fn input_home_page(&mut self, key: KeyCode) {
         match key {
-            KeyCode::Char('j') | KeyCode::Down => self.list_state.select_next(),
-            KeyCode::Char('k') | KeyCode::Up => self.list_state.select_previous(),
+	    KeyCode::Char('j') | KeyCode::Down => self.list_state.select_next(),
+	    KeyCode::Char('k') | KeyCode::Up => self.list_state.select_previous(),
 
-            KeyCode::Enter => match self.list_state.selected() {
+            KeyCode::Enter =>  match self.list_state.selected() {
                 Some(0) => self.screen = Screen::DodajKnjigoPage,
                 Some(1) => self.screen = Screen::IzbrisiKnjigoPage,
                 Some(2) => self.screen = Screen::SpremeniKnjigoPage,
                 Some(3) => self.screen = Screen::IzpisiKnjigePage,
                 Some(4) => self.screen = Screen::VnesiBranjePage,
                 Some(5) => self.exited = true,
-                _ => {}
+		_ => {}
             },
             _ => {}
         }
