@@ -1,15 +1,19 @@
 use color_eyre::eyre::Result;
 use ratatui::crossterm::event::{self, Event, KeyCode};
 use ratatui::{DefaultTerminal, Frame, widgets::Paragraph};
+use ratatui::style::{Color, Modifier, Style, Stylize};
+use ratatui::widgets::{Table, TableState, List, ListDirection, ListItem, ListState, Row};
+use ratatui::text::{Line, Span};
+use ratatui::layout::{Constraint, Layout, Rect, self};
 
 use crate::app::AppState;
 use crate::app::Screen;
-use crate::app::*;
+use crate::{app::*, knjiga};
 use crate::datoteka::*;
 use crate::input::*;
 use crate::knjiga::*;
 
-pub fn render(frame: &mut Frame, app: &AppState) {
+pub fn render(frame: &mut Frame, app: &mut AppState) {
     match app.screen {
 	Screen::HomePage => rander_home_page(frame, app),
 	Screen::DodajKnjigoPage => rander_dodaj_knjigo(frame, app),
@@ -20,29 +24,92 @@ pub fn render(frame: &mut Frame, app: &AppState) {
     }
 }
 
-fn rander_home_page(frame: &mut Frame, app: &AppState) {
-    let mut text = String::new();
+fn rander_home_page(frame: &mut Frame, app: &mut AppState) {
+    let constraints = [
+        Constraint::Length(1),
+        Constraint::Fill(1),
+    ];
+    let layout = Layout::vertical(constraints).spacing(1);
+    let [top, main] = frame.area().layout(&layout);
 
-    for (i, item) in HOME_PAGE_VSEBINA.iter().enumerate() {
-        if i == app.vrstica {
-            text.push_str(&format!("> {}\n", item));
-        } else {
-            text.push_str(&format!("  {}\n", item));
-        }
-    }
-
-    frame.render_widget(
-        Paragraph::new(text),
-        frame.area(),
-    );
-
+    let title = Line::from_iter([
+	Span::from("Knjiger").bold(),
+    ]);
+    let items = HOME_PAGE_VSEBINA.to_vec();
+    
+    frame.render_widget(title.centered(), top);
+    rander_list(frame, app, main, items);
 }
 
 fn rander_dodaj_knjigo(frame: &mut Frame, app: &AppState) {}
 
 fn rander_izbrisi_knjigo(frame: &mut Frame, app: &AppState) {}
 
-fn rander_izpisi_knjige(frame: &mut Frame, app: &AppState) {}
+fn rander_izpisi_knjige(frame: &mut Frame, app: &mut AppState) {
+
+    let layout = Layout::vertical([Constraint::Length(1), Constraint::Fill(1)]).spacing(1);
+    let [top, main] = frame.area().layout(&layout);
+    
+    let title = Line::from_iter([
+        Span::from("Izpisi knjige").bold(),
+    ]);
+    frame.render_widget(title.centered(), top);
+
+    render_table(frame, main, app);
+}
+
+pub fn render_table(frame: &mut Frame, area: Rect, app: &mut AppState) {
+    let header = Row::new(["Naslov", "Prebrane strani", "Vse strani"])
+        .style(Style::new().bold())
+        .bottom_margin(1);
+    
+    let mut rows :Vec<Row> = vec![];
+    for knjiga in &app.knjige {
+	rows.push(Row::new([knjiga.naslov.clone(), knjiga.prebrano.to_string(), knjiga.vse.to_string()]))
+    }
+
+    let widths = [
+        Constraint::Percentage(60),
+        Constraint::Percentage(20),
+        Constraint::Percentage(20),
+    ];
+    let table = Table::new(rows, widths)
+        .header(header)
+        .column_spacing(1)
+        .style(Color::White)
+        .row_highlight_style(Style::new().on_black().bold())
+        .column_highlight_style(Color::Gray)
+        .cell_highlight_style(Style::new().reversed().yellow())
+        .highlight_symbol("> ");
+
+    frame.render_stateful_widget(table, area, &mut app.table_state);
+}
+
+fn rander_list(frame: &mut Frame, app: &mut AppState, area: Rect, items: Vec<&str>) {
+    let list = List::new(items)
+        .style(Color::White)
+        .highlight_style(Modifier::REVERSED)
+        .highlight_symbol("> ");
+
+    frame.render_stateful_widget(list, area, &mut app.list_state);
+}
+
+
+
+//     let mut text = String::new();
+//     for (i, knjiga) in app.knjige.iter().enumerate() {
+// 	if i == app.vrstica {
+// 	    text.push_str(&format!("> {} ~ {}/{}\n",  knjiga.naslov, knjiga.prebrano, knjiga.vse))
+// 	} else {
+// 	    text.push_str(&format!("  {} ~ {}/{}\n",  knjiga.naslov, knjiga.prebrano, knjiga.vse))
+// 	}
+//     }
+    
+//     frame.render_widget(
+// 	Paragraph::new(text),
+// 	frame.area(),
+//     );
+
 
 fn rander_spremeni_knjigo(frame: &mut Frame, app: &AppState) {}
 

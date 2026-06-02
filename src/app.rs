@@ -1,5 +1,6 @@
 use color_eyre::eyre::Result;
 use ratatui::crossterm::event::{self, Event, KeyCode};
+use ratatui::widgets::{ListState, TableState};
 use ratatui::{DefaultTerminal, Frame, widgets::Paragraph};
 
 use crate::datoteka;
@@ -10,6 +11,8 @@ pub struct AppState {
     pub screen: Screen,
     pub knjige: Vec<Knjiga>,
     pub exited: bool,
+    pub list_state: ListState,
+    pub table_state: TableState,
 }
 
 pub enum Screen {
@@ -44,23 +47,16 @@ impl AppState {
 
     fn input_home_page(&mut self, key: KeyCode) {
         match key {
-            KeyCode::Down => {
-                self.vrstica = (self.vrstica + 1) % HOME_PAGE_VSEBINA.len();
-            }
-            KeyCode::Up => {
-                if self.vrstica == 0 {
-                    self.vrstica = HOME_PAGE_VSEBINA.len() - 1;
-                } else {
-                    self.vrstica -= 1;
-                }
-            }
-            KeyCode::Enter => match self.vrstica {
-                0 => self.screen = Screen::DodajKnjigoPage,
-                1 => self.screen = Screen::IzbrisiKnjigoPage,
-                2 => self.screen = Screen::SpremeniKnjigoPage,
-                3 => self.screen = Screen::IzpisiKnjigePage,
-                4 => self.screen = Screen::VnesiBranjePage,
-                5 => self.exited = true,
+	    KeyCode::Char('j') | KeyCode::Down => self.list_state.select_next(),
+	    KeyCode::Char('k') | KeyCode::Up => self.list_state.select_previous(),
+
+            KeyCode::Enter =>  match self.list_state.selected() {
+                Some(0) => self.screen = Screen::DodajKnjigoPage,
+                Some(1) => self.screen = Screen::IzbrisiKnjigoPage,
+                Some(2) => self.screen = Screen::SpremeniKnjigoPage,
+                Some(3) => self.screen = Screen::IzpisiKnjigePage,
+                Some(4) => self.screen = Screen::VnesiBranjePage,
+                Some(5) => self.exited = true,
 		_ => {}
             },
             _ => {}
@@ -73,7 +69,17 @@ impl AppState {
 
     fn input_spremeni_knjigo(&mut self, key: KeyCode) {}
 
-    fn input_izpisi_knjige(&mut self, key: KeyCode) {}
+    fn input_izpisi_knjige(&mut self, key: KeyCode) {
+        match key {
+            KeyCode::Char('j') | KeyCode::Down => self.table_state.select_next(),
+            KeyCode::Char('k') | KeyCode::Up => self.table_state.select_previous(),
+            KeyCode::Char('l') | KeyCode::Right => self.table_state.select_next_column(),
+            KeyCode::Char('h') | KeyCode::Left => self.table_state.select_previous_column(),
+            KeyCode::Char('g') => self.table_state.select_first(),
+            KeyCode::Char('G') => self.table_state.select_last(),
+            _ => {}
+        }
+    }
 
     fn input_vnesi_branje(&mut self, key: KeyCode) {}
 
