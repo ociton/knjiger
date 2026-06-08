@@ -1,10 +1,11 @@
 use color_eyre::eyre::Result;
+use crossterm::event::KeyCode::KeypadBegin;
 use ratatui::crossterm::event::{self, Event, KeyCode};
 use ratatui::widgets::{ListState, TableState};
 use ratatui::{DefaultTerminal, Frame, widgets::Paragraph};
 
-use crate::{datoteka, knjiga};
 use crate::knjiga::Knjiga;
+use crate::{datoteka, knjiga};
 
 #[derive(PartialEq)]
 pub enum PopupPoljeDodaja {
@@ -30,6 +31,7 @@ pub struct AppState {
     pub table_state: TableState,
     pub dodaj_popup: DodajKnjigoPopup,
     pub dodaj_popup_viden: bool,
+    pub izbrisi_popup_viden: bool,
 }
 
 pub enum Screen {
@@ -38,56 +40,61 @@ pub enum Screen {
     VnesiBranjePage,
 }
 
-pub const HOME_PAGE_VSEBINA: [&str; 3] = [
-    "Izpisi knjige",
-    "Vnesi branje",
-    "Exit",
-];
+pub const HOME_PAGE_VSEBINA: [&str; 3] = ["Izpisi knjige", "Vnesi branje", "Exit"];
 
 impl DodajKnjigoPopup {
-    
     pub fn new() -> Self {
-	Self {
-	    napaka: None,
-	    naslov: String::new(),
-	    polje: PopupPoljeDodaja::Naslov,
-	    prebrano: String::new(),
-	    vse: String::new()
-	}
+        Self {
+            napaka: None,
+            naslov: String::new(),
+            polje: PopupPoljeDodaja::Naslov,
+            prebrano: String::new(),
+            vse: String::new(),
+        }
     }
 
     pub fn handle_char(&mut self, c: char) {
-	self.napaka = None;
-	match self.polje {
-	    PopupPoljeDodaja::Naslov => self.naslov.push(c),
-	    PopupPoljeDodaja::PrebraneStrani => if c.is_ascii_digit() {
-		self.prebrano.push(c)
-	    }
-	    PopupPoljeDodaja::VseStrani => if c.is_ascii_digit() {
-		self.vse.push(c)
-	    }
-	}
+        self.napaka = None;
+        match self.polje {
+            PopupPoljeDodaja::Naslov => self.naslov.push(c),
+            PopupPoljeDodaja::PrebraneStrani => {
+                if c.is_ascii_digit() {
+                    self.prebrano.push(c)
+                }
+            }
+            PopupPoljeDodaja::VseStrani => {
+                if c.is_ascii_digit() {
+                    self.vse.push(c)
+                }
+            }
+        }
     }
     
     pub fn handle_backspace(&mut self) {
-	self.napaka = None;
+        self.napaka = None;
 
-	match self.polje {
-	    PopupPoljeDodaja::Naslov => {self.naslov.pop();}
-	    PopupPoljeDodaja::PrebraneStrani => {self.prebrano.pop();}
-	    PopupPoljeDodaja::VseStrani => {self.vse.pop();}
-	}
+        match self.polje {
+            PopupPoljeDodaja::Naslov => {
+                self.naslov.pop();
+            }
+            PopupPoljeDodaja::PrebraneStrani => {
+                self.prebrano.pop();
+            }
+            PopupPoljeDodaja::VseStrani => {
+                self.vse.pop();
+            }
+        }
     }
-    
+
     pub fn menjaj_polje(&mut self) {
-	self.napaka = None;
-	self.polje = match self.polje {
-	    PopupPoljeDodaja::Naslov => PopupPoljeDodaja::PrebraneStrani,
-	    PopupPoljeDodaja::PrebraneStrani => PopupPoljeDodaja::VseStrani,
-	    PopupPoljeDodaja::VseStrani => PopupPoljeDodaja::Naslov,
-	}
+        self.napaka = None;
+        self.polje = match self.polje {
+            PopupPoljeDodaja::Naslov => PopupPoljeDodaja::PrebraneStrani,
+            PopupPoljeDodaja::PrebraneStrani => PopupPoljeDodaja::VseStrani,
+            PopupPoljeDodaja::VseStrani => PopupPoljeDodaja::Naslov,
+        }
     }
-    
+
     pub fn submit(&mut self) -> Option<Knjiga> {
         if self.naslov.is_empty() {
             self.napaka = Some("Naslov ne sme biti prazen!".into());
@@ -112,17 +119,16 @@ impl DodajKnjigoPopup {
             return None;
         }
         Some(Knjiga {
-	    naslov: self.naslov.clone(),
-	    prebrano: prebrane,
-	    vse: vse,
+            naslov: self.naslov.clone(),
+            prebrano: prebrane,
+            vse: vse,
         })
     }
-    
+
     pub fn reset(&mut self) {
         *self = DodajKnjigoPopup::new();
     }
 }
-	
 
 impl AppState {
     pub fn handle_input(&mut self, key: KeyCode) {
@@ -135,56 +141,78 @@ impl AppState {
 
     fn input_home_page(&mut self, key: KeyCode) {
         match key {
-	    KeyCode::Char('j') | KeyCode::Down => self.list_state.select_next(),
-	    KeyCode::Char('k') | KeyCode::Up => self.list_state.select_previous(),
-	    KeyCode::Char('q') | KeyCode::Backspace => self.exited = true, 
+            KeyCode::Char('j') | KeyCode::Down => self.list_state.select_next(),
+            KeyCode::Char('k') | KeyCode::Up => self.list_state.select_previous(),
+            KeyCode::Char('q') | KeyCode::Backspace => self.exited = true,
 
-            KeyCode::Enter =>  match self.list_state.selected() {
+            KeyCode::Enter => match self.list_state.selected() {
                 Some(0) => self.screen = Screen::IzpisiKnjigePage,
                 Some(1) => self.screen = Screen::VnesiBranjePage,
                 Some(2) => self.exited = true,
-		_ => {}
+                _ => {}
             },
             _ => {}
         }
     }
 
     fn input_izpisi_knjige(&mut self, key: KeyCode) {
-	if self.dodaj_popup_viden {
-	    match key {
-		KeyCode::Tab => self.dodaj_popup.menjaj_polje(),
-		KeyCode::Backspace => self.dodaj_popup.handle_backspace(),
-		KeyCode::Char(c) => self.dodaj_popup.handle_char(c),
-		KeyCode::Enter => {
-		    if let Some(knjiga) = self.dodaj_popup.submit() {
-			self.shrani_knjigo(knjiga);
-			self.dodaj_popup_viden = false;
-			self.dodaj_popup.reset();
+        if self.dodaj_popup_viden {
+            match key {
+                KeyCode::Tab => self.dodaj_popup.menjaj_polje(),
+                KeyCode::Backspace => self.dodaj_popup.handle_backspace(),
+                KeyCode::Char(c) => self.dodaj_popup.handle_char(c),
+                KeyCode::Enter => {
+		    match self.dodaj_popup.polje {
+			PopupPoljeDodaja::Naslov | PopupPoljeDodaja::PrebraneStrani => self.dodaj_popup.menjaj_polje(),
+			PopupPoljeDodaja::VseStrani => {
+			    if let Some(knjiga) = self.dodaj_popup.submit() {
+				self.shrani_knjigo(knjiga);
+				self.dodaj_popup_viden = false;
+				self.dodaj_popup.reset();
+			    }   
+			} 
 		    }
-		}
-		KeyCode::Esc => {
-		    self.dodaj_popup_viden = false;
-		    self.dodaj_popup.reset();
-		}
-		_ => {}
-	    }
-	    return;
-	}
+		},
+                KeyCode::Esc => {
+                    self.dodaj_popup_viden = false;
+                    self.dodaj_popup.reset();
+                }
+                _ => {}
+            }
+            return;
+        } else if self.izbrisi_popup_viden {
+            match key {
+                KeyCode::Char('y') => {
+                    self.zbrisi_knjigo(self.vrstica);
+                    self.izbrisi_popup_viden = false
+                }
+                KeyCode::Char('n') => self.izbrisi_popup_viden = false,
+		KeyCode::Esc => self.izbrisi_popup_viden = false,
+                _ => {}
+            }
+            return;
+        }
+
         match key {
-	    KeyCode::Char('j') | KeyCode::Down => self.table_state.select_next(),
-	    KeyCode::Char('k') | KeyCode::Up => self.table_state.select_previous(),
-	    KeyCode::Char('l') | KeyCode::Right => self.table_state.select_next_column(),
-	    KeyCode::Char('h') | KeyCode::Left => self.table_state.select_previous_column(),
-	    KeyCode::Char('g') => self.table_state.select_first(),
-	    KeyCode::Char('G') => self.table_state.select_last(),
-	    KeyCode::Char('a') => self.dodaj_popup_viden = true,
-	    KeyCode::Backspace => self.screen = Screen::HomePage,
-	    KeyCode::Char('q') => self.exited = true, 
-	    _ => {}
-	}
+            KeyCode::Char('j') | KeyCode::Down => self.table_state.select_next(),
+            KeyCode::Char('k') | KeyCode::Up => self.table_state.select_previous(),
+            KeyCode::Char('l') | KeyCode::Right => self.table_state.select_next_column(),
+            KeyCode::Char('h') | KeyCode::Left => self.table_state.select_previous_column(),
+            KeyCode::Char('g') => self.table_state.select_first(),
+            KeyCode::Char('G') => self.table_state.select_last(),
+            KeyCode::Char('a') => self.dodaj_popup_viden = true,
+            KeyCode::Backspace => self.screen = Screen::HomePage,
+            KeyCode::Char('q') => self.exited = true,
+            KeyCode::Char('d') => {
+                if let Some(i) = self.table_state.selected() {
+                    self.izbrisi_popup_viden = true;
+                    self.vrstica = i
+                }
+            }
+            _ => {}
+        }
     }
 
-    
     fn input_vnesi_branje(&mut self, key: KeyCode) {}
 
     fn shrani_knjigo(&mut self, knjiga: Knjiga) {

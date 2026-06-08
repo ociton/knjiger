@@ -35,6 +35,7 @@ fn main() -> Result<()> {
 	table_state: TableState::default().with_selected(Some(0)),
 	dodaj_popup: DodajKnjigoPopup::new(),
 	dodaj_popup_viden: false,
+	izbrisi_popup_viden: false,
     };
     
     loop {

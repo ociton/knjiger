@@ -1,10 +1,10 @@
 use color_eyre::eyre::Result;
+use color_eyre::owo_colors::XtermColors::ClamShell;
 use ratatui::layout::Alignment;
-use ratatui::widgets::{Block, BorderType, Borders, Clear};
 use ratatui::crossterm::event::{self, Event, KeyCode};
 use ratatui::{DefaultTerminal, Frame, widgets::Paragraph};
 use ratatui::style::{Color, Modifier, Style, Stylize};
-use ratatui::widgets::{Table, TableState, List, ListDirection, ListItem, ListState, Row};
+use ratatui::widgets::{Table, TableState, List, ListDirection, ListItem, ListState, Row, Block, BorderType, Borders, Clear};
 use ratatui::text::{Line, Span};
 use ratatui::layout::{Constraint, Layout, Rect, self};
 
@@ -59,7 +59,7 @@ fn rander_izpisi_knjige(frame: &mut Frame, app: &mut AppState) {
     let block = Block::default()
         .title(title)
         .title_alignment(Alignment::Center)
-        .title_bottom(" a - dodaj knjigo | j/k - gor/dol | <backspace> - nazaj ")
+        .title_bottom(" a - dodaj knjigo | d - zbrisi knjigo | j/k - gor/dol | <backspace> - nazaj ")
         .borders(Borders::ALL)
         .border_type(BorderType::Rounded)
         .border_style(Style::default().fg(Color::Cyan));
@@ -75,11 +75,47 @@ fn rander_izpisi_knjige(frame: &mut Frame, app: &mut AppState) {
     
     if app.dodaj_popup_viden {
 	render_dodaj_popup(frame, app)
+    } else if app.izbrisi_popup_viden {
+	render_izbrisi_popup(frame, app)
     }
 }
 
+fn render_izbrisi_popup(frame: &mut Frame, app: &AppState) {
+    let title = Line::from_iter([
+        Span::from("Izbrisi knjige").bold(),
+    ]);
+
+    let area = bottom_rect(90, 3, frame.area());
+    
+    frame.render_widget(Clear, area);
+    
+    let block = Block::default()
+        .title(title)
+        .title_alignment(Alignment::Center)
+        .borders(Borders::ALL)
+        .border_type(BorderType::Rounded)
+        .border_style(Style::default().fg(Color::Cyan));
+
+    frame.render_widget(block, area);
+    
+    let inner = Block::default()
+        .borders(Borders::ALL)
+        .border_type(BorderType::Rounded)
+        .border_style(Style::default().fg(Color::Cyan))
+        .inner(area);
+    
+    let vsebina = Line::from(vec![
+        Span::styled(" Za potrditev izbrisa knjige pritisnite ", Style::default().fg(Color::White)),
+        Span::styled("y", Style::default().fg(Color::Cyan).bold()),
+        Span::styled(" / ", Style::default().fg(Color::White)),
+        Span::styled("n", Style::default().fg(Color::Cyan).bold()),
+    ]).left_aligned();
+
+    frame.render_widget(vsebina, inner)
+}
+
 pub fn render_dodaj_popup(frame: &mut Frame, app: &AppState){
-    let area = centered_rect(50, 11, frame.area()); 
+    let area = centered_rect(50, 7, frame.area()); 
     
     frame.render_widget(Clear, area);
     
@@ -93,9 +129,9 @@ pub fn render_dodaj_popup(frame: &mut Frame, app: &AppState){
     frame.render_widget(block, area);
 
     let chunks = Layout::vertical([
-	Constraint::Length(2), // naslov
-	Constraint::Length(2), // prebrano
-	Constraint::Length(2), // vsestrani
+	Constraint::Length(1), // naslov
+	Constraint::Length(1), // prebrano
+	Constraint::Length(1), // vsestrani
 	Constraint::Length(1), // napaka
     ])
     .margin(1)
@@ -103,9 +139,9 @@ pub fn render_dodaj_popup(frame: &mut Frame, app: &AppState){
     
     let popup = &app.dodaj_popup;
     
-    render_popup_polje(frame, chunks[0], "Naslov         ", &popup.naslov, popup.polje == PopupPoljeDodaja::Naslov);
-    render_popup_polje(frame, chunks[1], "Prebrane strani", &popup.prebrano, popup.polje == PopupPoljeDodaja::PrebraneStrani);
-    render_popup_polje(frame, chunks[2], "Vse strani     ", &popup.vse, popup.polje == PopupPoljeDodaja::VseStrani);
+    render_popup_polje(frame, chunks[0], "Naslov          ", &popup.naslov, popup.polje == PopupPoljeDodaja::Naslov);
+    render_popup_polje(frame, chunks[1], "Prebrane strani ", &popup.prebrano, popup.polje == PopupPoljeDodaja::PrebraneStrani);
+    render_popup_polje(frame, chunks[2], "Vse strani      ", &popup.vse, popup.polje == PopupPoljeDodaja::VseStrani);
     
     
     let spodaj = if let Some(napaka) = &popup.napaka {
@@ -135,6 +171,14 @@ fn render_popup_polje(frame: &mut Frame, area: Rect, prompt: &str, vsebina: &str
     ]);
 
     frame.render_widget(Paragraph::new(line), area);
+}
+
+
+fn bottom_rect(percent_x: u16, height: u16, r: Rect) -> Rect {
+    let x = r.x + (r.width.saturating_sub(r.width * percent_x / 100)) / 2;
+    let w = r.width * percent_x / 100;
+    let y = r.y + r.height.saturating_sub(height);
+    Rect::new(x, y, w, height.min(r.height))
 }
 
 
@@ -181,169 +225,4 @@ fn rander_list(frame: &mut Frame, app: &mut AppState, area: Rect, items: Vec<&st
     frame.render_stateful_widget(list, area, &mut app.list_state);
 }
 
-
-
-//     let mut text = String::new();
-//     for (i, knjiga) in app.knjige.iter().enumerate() {
-// 	if i == app.vrstica {
-// 	    text.push_str(&format!("> {} ~ {}/{}\n",  knjiga.naslov, knjiga.prebrano, knjiga.vse))
-// 	} else {
-// 	    text.push_str(&format!("  {} ~ {}/{}\n",  knjiga.naslov, knjiga.prebrano, knjiga.vse))
-// 	}
-//     }
-    
-//     frame.render_widget(
-// 	Paragraph::new(text),
-// 	frame.area(),
-//     );
-
-
-fn rander_spremeni_knjigo(frame: &mut Frame, app: &AppState) {}
-
 fn rander_vnesi_branje(frame: &mut Frame, app: &AppState) {}
-
-// pub fn home_page() {
-//     let mut knjige: Vec<Knjiga> = csv_v_vektor();
-//     loop {
-//         println!("****************** Dobrodošli v beležniku branja ******************\n");
-//         println!(" 1. Dodaj knjigo");
-//         println!(" 2. Zbriši knjigo");
-//         println!(" 3. Spremeni knjigo");
-//         println!(" 4. Prebrane knjige");
-//         println!(" 5. Vnesi branje");
-//         println!(" 6. Exit");
-//         print!("\n");
-
-//         let izbira = vnesi_st();
-
-//         match izbira {
-//             1 => dodaj_knjigo_page(&mut knjige),
-//             2 => izbrisi_knjigo_page(&mut knjige),
-//             3 => spremeni_knjigo_page(&mut knjige),
-//             4 => preberi_knjige_page(&knjige),
-//             5 => belezi_branje_page(&mut knjige),
-//             6 => {
-//                 println!("*************************** Nasvidenje! ***************************");
-//                 shrani_knjige(&mut knjige);
-//                 break;
-//             }
-//             _ => println!(" Neprimeren vnos, poskusite ponovno:"),
-//         }
-//     }
-// }
-
-// fn dodaj_knjigo_page(knjige: &mut Vec<Knjiga>) {
-//     println!("*************************** Dodaj Knjigo **************************\n");
-//     println!(" Naslov knjige:");
-//     let naslov = vnesi_string();
-//     println!(" Število strani:");
-//     let vse_strani = vnesi_st();
-//     println!(" Število prebranih strani:");
-//     let prebrane_strani = vnesi_prebrane_strani(vse_strani, 0);
-//     println!();
-//     let dodana_knjiga = Knjiga {
-//         naslov: naslov,
-//         prebrano: prebrane_strani,
-//         vse: vse_strani,
-//     };
-//     knjige.push(dodana_knjiga.clone());
-//     shrani_knjige(knjige);
-//     println!(
-//         " Naslov: {} \n Število prebranih strani: {} \n Število strani knjige: {} \n",
-//         dodana_knjiga.naslov, dodana_knjiga.prebrano, dodana_knjiga.vse
-//     );
-// }
-
-// fn preberi_knjige_page(knjige: &Vec<Knjiga>) {
-//     println!("************************* Prebrane knjige *************************");
-
-//     for knjiga in knjige {
-//         println!(" Naslov: {}", knjiga.naslov);
-//         println!(" Prebrane strani: {}", knjiga.prebrano);
-//         println!(" Vse strani: {}", knjiga.vse);
-//         println!("-------------------------------------------------------------------");
-//     }
-// }
-
-// fn izbrisi_knjigo_page(knjige: &mut Vec<Knjiga>) {
-//     println!("************************* Izbriši knjigo **************************\n");
-
-//     if knjige.len() != 0 {
-//         let stevilka_za_zbrisat = izberi_knjigo(knjige, "Številka knjige, ki jo želite zbrisati");
-
-//         let zbrisana_knjiga = knjige.remove(stevilka_za_zbrisat as usize);
-//         shrani_knjige(knjige);
-
-//         println!("Zbrisana knjiga: {}", zbrisana_knjiga.naslov);
-//         println!();
-//     } else {
-//         println!(" Ni knjig za izbrisati");
-//         println!();
-//     }
-// }
-
-// fn spremeni_knjigo_page(knjige: &mut Vec<Knjiga>) {
-//     println!("************************* Spremeni knjigo *************************");
-
-//     if knjige.len() != 0 {
-//         let stevilka_knjige = izberi_knjigo(knjige, "Številka knjige, ki jo želite spremeniti");
-//         let knjiga_stara: &Knjiga = &knjige[stevilka_knjige as usize];
-
-//         println!(" Kaj želite spremeniti?");
-//         println!(" 1. Naslov knjige ({})", knjiga_stara.naslov);
-//         println!(" 2. Prebrane strani ({})", knjiga_stara.prebrano);
-//         println!(" 3. Vse strani knjige ({})", knjiga_stara.vse);
-
-//         loop {
-//             let izbira = vnesi_st();
-//             match izbira {
-//                 1 => {
-//                     println!(" Vnesite nov naslov ({}):", knjiga_stara.naslov);
-//                     let nov_naslov = vnesi_string();
-//                     knjige[stevilka_knjige as usize].naslov = nov_naslov;
-//                     break;
-//                 },
-//                 2 => {
-//                     println!(" Vnesite prebrane strani ({}):", knjiga_stara.prebrano);
-//                     let nov_prebrane = vnesi_prebrane_strani(knjiga_stara.vse, 0);
-//                     knjige[stevilka_knjige as usize].prebrano = nov_prebrane;
-//                     break;
-//                 },
-//                 3 => {
-//                     println!(" Vnesite vse strani knjige ({}):", knjiga_stara.vse);
-//                     let nov_vse = vnesi_vse_strani(knjiga_stara.prebrano);
-//                     knjige[stevilka_knjige as usize].vse = nov_vse;
-//                     break;
-//                 },
-//                 _ => {
-//                     println!("Neprimeren vnos, poskusite ponovno:")
-//                 }
-//             }
-//         }
-
-//         shrani_knjige(knjige)
-
-//     } else {
-//         println!();
-//         println!(" Ni knjig, za jih spremeniti");
-//         println!();
-//     }
-// }
-
-// fn belezi_branje_page(knjige: &mut Vec<Knjiga>) {
-//     println!("************************** Beleži branje ***************************\n");
-//     if knjige.len() != 0 {
-//         let prebrana_knjiga = izberi_knjigo(knjige, "Knjiga, ste jo brali:");
-//         println!("Koliko strani ste prebrali");
-//         let st_prebranih_strani = vnesi_prebrane_strani(
-//             knjige[prebrana_knjiga as usize].vse,
-//             knjige[prebrana_knjiga as usize].prebrano,
-//         );
-
-//         knjige[prebrana_knjiga as usize].prebrano += st_prebranih_strani;
-//         shrani_knjige(knjige)
-//     } else {
-//         println!(" Ni knjig za beležiti branje");
-//         println!();
-//     }
-// }
