@@ -1,3 +1,4 @@
+use app::DodajKnjigoPopup;
 use color_eyre::eyre::Result;
 use crossterm::event;
 use crossterm::event::Event;
@@ -32,6 +33,8 @@ fn main() -> Result<()> {
 	exited: false,
 	list_state: ListState::default().with_selected(Some(0)),
 	table_state: TableState::default().with_selected(Some(0)),
+	dodaj_popup: DodajKnjigoPopup::new(),
+	dodaj_popup_viden: false,
     };
     
     loop {
@@ -43,9 +46,7 @@ fn main() -> Result<()> {
 
 	if let Event::Key(key) = event::read()? {
 	    match key.code {
-		event::KeyCode::Backspace => app.screen = Screen::HomePage,
-		event::KeyCode::Char('q') => app.exited = true,
-		event::KeyCode::Esc => app.exited = true,
+		event::KeyCode::Home => app.screen = Screen::HomePage,
 		_ => app.handle_input(key.code)
 	    }
 	}

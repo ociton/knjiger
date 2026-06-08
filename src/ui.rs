@@ -1,4 +1,6 @@
 use color_eyre::eyre::Result;
+use ratatui::layout::Alignment;
+use ratatui::widgets::{Block, BorderType, Borders, Clear};
 use ratatui::crossterm::event::{self, Event, KeyCode};
 use ratatui::{DefaultTerminal, Frame, widgets::Paragraph};
 use ratatui::style::{Color, Modifier, Style, Stylize};
@@ -49,6 +51,77 @@ fn rander_izpisi_knjige(frame: &mut Frame, app: &mut AppState) {
     frame.render_widget(title.centered(), top);
 
     render_table(frame, main, app);
+    
+    if app.dodaj_popup_viden {
+	render_dodaj_popup(frame, app)
+    }
+}
+
+pub fn render_dodaj_popup(frame: &mut Frame, app: &AppState){
+    let area = centered_rect(50, 11, frame.area()); 
+    
+    frame.render_widget(Clear, area);
+    
+    let block = Block::default()
+        .title(" Dodaj Knjigo ")
+        .title_alignment(Alignment::Center)
+        .title_bottom(Span::styled(" <tab> - naslednje | <enter> - shrani | <esc> - zapri ", Style::default()))
+        .borders(Borders::ALL)
+        .border_type(BorderType::Rounded)
+        .border_style(Style::default().fg(Color::Cyan));
+    frame.render_widget(block, area);
+
+    let chunks = Layout::vertical([
+	Constraint::Length(2), // naslov
+	Constraint::Length(2), // prebrano
+	Constraint::Length(2), // vsestrani
+	Constraint::Length(1), // napaka
+    ])
+    .margin(1)
+    .split(area);
+    
+    let popup = &app.dodaj_popup;
+    
+    render_popup_polje(frame, chunks[0], "Naslov         ", &popup.naslov, popup.polje == PopupPoljeDodaja::Naslov);
+    render_popup_polje(frame, chunks[1], "Prebrane strani", &popup.prebrano, popup.polje == PopupPoljeDodaja::PrebraneStrani);
+    render_popup_polje(frame, chunks[2], "Vse strani     ", &popup.vse, popup.polje == PopupPoljeDodaja::VseStrani);
+    
+    
+    let spodaj = if let Some(napaka) = &popup.napaka {
+        Paragraph::new(napaka.as_str())
+            .style(Style::default().fg(Color::Red))
+            .alignment(Alignment::Center)
+    } else {
+        Paragraph::new("")
+            .style(Style::default().fg(Color::DarkGray))
+            .alignment(Alignment::Center)
+    };
+    frame.render_widget(spodaj, chunks[3]);
+}
+
+fn render_popup_polje(frame: &mut Frame, area: Rect, prompt: &str, vsebina: &str, active: bool) {
+    let prompt_style = if active {
+        Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD)
+    } else {
+        Style::default().fg(Color::DarkGray)
+    };
+
+    let line = Line::from(vec![
+        Span::styled(format!("{}: ", prompt), prompt_style),
+        Span::styled(vsebina.to_string(), Style::default().fg(Color::White)),
+        if active { Span::styled("█", Style::default().fg(Color::Yellow)) }
+        else       { Span::raw("") },
+    ]);
+
+    frame.render_widget(Paragraph::new(line), area);
+}
+
+
+fn centered_rect(percent_x: u16, height: u16, r: Rect) -> Rect {
+    let x = r.x + (r.width.saturating_sub(r.width * percent_x / 100)) / 2;
+    let w = r.width * percent_x / 100;
+    let y = r.y + r.height.saturating_sub(height) / 2;
+    Rect::new(x, y, w, height.min(r.height))
 }
 
 pub fn render_table(frame: &mut Frame, area: Rect, app: &mut AppState) {
