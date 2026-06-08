@@ -17,40 +17,61 @@ use crate::knjiga::*;
 
 pub fn render(frame: &mut Frame, app: &mut AppState) {
     match app.screen {
-	Screen::HomePage => rander_home_page(frame, app),
+	Screen::HomePage => render_home_page(frame, app),
 	Screen::IzpisiKnjigePage => rander_izpisi_knjige(frame, app),
 	Screen::VnesiBranjePage => rander_vnesi_branje(frame, app),
     }
 }
 
-fn rander_home_page(frame: &mut Frame, app: &mut AppState) {
-    let constraints = [
-        Constraint::Length(1),
-        Constraint::Fill(1),
-    ];
-    let layout = Layout::vertical(constraints).spacing(1);
-    let [top, main] = frame.area().layout(&layout);
-
+fn render_home_page(frame: &mut Frame, app: &mut AppState) {
+    let area = centered_rect(20, 5, frame.area());
+    
     let title = Line::from_iter([
 	Span::from("Knjiger").bold(),
     ]);
-    let items = HOME_PAGE_VSEBINA.to_vec();
     
-    frame.render_widget(title.centered(), top);
-    rander_list(frame, app, main, items);
+    let block = Block::default()
+        .title(title)
+        .title_alignment(Alignment::Center)
+        // .title_bottom(" j/k - gor/dol | <enter> - izberi | q/<backspace> - zapri ")
+        .borders(Borders::ALL)
+        .border_type(BorderType::Rounded)
+        .border_style(Style::default().fg(Color::Cyan));
+    
+    frame.render_widget(block, area);
+
+    let inner = Block::default()
+        .borders(Borders::ALL)
+        .border_type(BorderType::Rounded)
+        .inner(area);
+
+    let items = HOME_PAGE_VSEBINA.to_vec();
+    rander_list(frame, app, inner, items);
 }
 
 fn rander_izpisi_knjige(frame: &mut Frame, app: &mut AppState) {
-
-    let layout = Layout::vertical([Constraint::Length(1), Constraint::Fill(1)]).spacing(1);
-    let [top, main] = frame.area().layout(&layout);
-    
     let title = Line::from_iter([
         Span::from("Izpisi knjige").bold(),
     ]);
-    frame.render_widget(title.centered(), top);
+    
+    let area = centered_rect(90, 40, frame.area());
+    
+    let block = Block::default()
+        .title(title)
+        .title_alignment(Alignment::Center)
+        .title_bottom(" a - dodaj knjigo | j/k - gor/dol | <backspace> - nazaj ")
+        .borders(Borders::ALL)
+        .border_type(BorderType::Rounded)
+        .border_style(Style::default().fg(Color::Cyan));
+    
+    frame.render_widget(block, area);
+    
+    let inner = Block::default()
+        .borders(Borders::ALL)
+        .border_type(BorderType::Rounded)
+        .inner(area);
 
-    render_table(frame, main, app);
+    render_table(frame, inner, app);
     
     if app.dodaj_popup_viden {
 	render_dodaj_popup(frame, app)
@@ -101,15 +122,15 @@ pub fn render_dodaj_popup(frame: &mut Frame, app: &AppState){
 
 fn render_popup_polje(frame: &mut Frame, area: Rect, prompt: &str, vsebina: &str, active: bool) {
     let prompt_style = if active {
-        Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD)
+        Style::default().fg(Color::White).add_modifier(Modifier::BOLD)
     } else {
-        Style::default().fg(Color::DarkGray)
+        Style::default().fg(Color::Gray)
     };
 
     let line = Line::from(vec![
         Span::styled(format!("{}: ", prompt), prompt_style),
         Span::styled(vsebina.to_string(), Style::default().fg(Color::White)),
-        if active { Span::styled("█", Style::default().fg(Color::Yellow)) }
+        if active { Span::styled("█", Style::default().fg(Color::White)) }
         else       { Span::raw("") },
     ]);
 
@@ -154,7 +175,7 @@ pub fn render_table(frame: &mut Frame, area: Rect, app: &mut AppState) {
 fn rander_list(frame: &mut Frame, app: &mut AppState, area: Rect, items: Vec<&str>) {
     let list = List::new(items)
         .style(Color::White)
-        .highlight_style(Modifier::REVERSED)
+        .highlight_style(Modifier::BOLD)
         .highlight_symbol("> ");
 
     frame.render_stateful_widget(list, area, &mut app.list_state);
