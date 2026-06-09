@@ -31,23 +31,3 @@ pub fn shrani_knjige(knjige: &Vec<Knjiga>) {
     }
     fs::write("knjige.csv", vsebina).expect("Napaka pri pisanju v datoteko");
 }
-
-// pub fn izberi_knjigo(knjige: &mut Vec<Knjiga>, prompt: &str) -> u32 {
-//     for (index, knjiga) in knjige.iter().enumerate() {
-//         println!(
-//             " {}. {} ~ {}/{}",
-//             index, knjiga.naslov, knjiga.prebrano, knjiga.vse
-//         );
-//     }
-//     println!();
-//     println!("{}", prompt);
-//     println!();
-//     loop {
-//         let izbrnana_knjiga = vnesi_st();
-//         if izbrnana_knjiga as i64 <= knjige.len() as i64 - 1 {
-//             return izbrnana_knjiga;
-//         } else {
-//             println!("Vnesite primerno številko:")
-//         }
-//     }
-// }
