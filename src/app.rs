@@ -1,3 +1,5 @@
+use std::ptr::null;
+
 use color_eyre::eyre::Result;
 use crossterm::event::KeyCode::KeypadBegin;
 use ratatui::crossterm::event::{self, Event, KeyCode};
@@ -22,6 +24,21 @@ pub struct DodajKnjigoPopup {
     pub napaka: Option<String>,
 }
 
+pub enum SpremeneljivkeKnjige {
+    Naslov,
+    PrebraneStrani,
+    VseStrani,
+}
+
+pub struct SpremeniKnjigoPopup {
+    pub oznacena_knjiga: u32,
+    pub oznaceno_polje: SpremeneljivkeKnjige,
+    pub naslov: String,
+    pub prebrano: String,
+    pub vse: String,
+    pub napaka: Option<String>,
+}
+
 pub struct AppState {
     pub vrstica: usize,
     pub screen: Screen,
@@ -32,6 +49,8 @@ pub struct AppState {
     pub dodaj_popup: DodajKnjigoPopup,
     pub dodaj_popup_viden: bool,
     pub izbrisi_popup_viden: bool,
+    pub spremeni_popup_viden: bool,
+    pub spremeni_popup: SpremeniKnjigoPopup,
 }
 
 pub enum Screen {
@@ -41,6 +60,103 @@ pub enum Screen {
 }
 
 pub const HOME_PAGE_VSEBINA: [&str; 3] = ["Izpisi knjige", "Vnesi branje", "Exit"];
+
+impl SpremeniKnjigoPopup {
+    pub fn new() -> Self {
+        Self {
+            napaka: None,
+            naslov: String::new(),
+            oznacena_knjiga: 0,
+            oznaceno_polje: SpremeneljivkeKnjige::Naslov,
+            prebrano: String::new(),
+            vse: String::new(),
+        }
+    }
+
+    pub fn handle_char(&mut self, c: char) {
+        self.napaka = None;
+        match self.oznaceno_polje {
+            SpremeneljivkeKnjige::Naslov => self.naslov.push(c),
+            SpremeneljivkeKnjige::PrebraneStrani => {
+                if c.is_ascii_digit() {
+                    self.prebrano.push(c)
+                }
+            }
+            SpremeneljivkeKnjige::VseStrani => {
+                if c.is_ascii_digit() {
+                    self.vse.push(c)
+                }
+            }
+        }
+    }
+
+    pub fn handle_backspace(&mut self) {
+        self.napaka = None;
+
+        match self.polje {
+            SpremeneljivkeKnjige::Naslov => {
+                self.naslov.pop();
+            }
+            SpremeneljivkeKnjige::PrebraneStrani => {
+                self.prebrano.pop();
+            }
+            SpremeneljivkeKnjige::VseStrani => {
+                self.vse.pop();
+            }
+        }
+    }
+
+    pub fn submit(&mut self) -> Option<Knjiga> {
+        let prebrane = match self.prebrano.parse::<u32>() {
+            Ok(n) => n,
+            Err(_) => {
+                self.napaka = Some("Prebrane strani mora biti stevilo!".into());
+                return None;
+            }
+        };
+
+        let vse = match self.vse.parse::<u32>() {
+            Ok(n) => n,
+            Err(_) => {
+                self.napaka = Some("Vse strani mora biti število!".into());
+                return None;
+            }
+        };
+
+        match self.oznaceno_polje {
+            SpremeneljivkeKnjige::Naslov => {
+                if self.naslov.is_empty() {
+                    self.napaka = Some("Naslov ne sme biti prazen!".into());
+                    return None;
+                }
+            }
+
+            SpremeneljivkeKnjige::PrebraneStrani => {
+                if prebrane > vse {
+                    self.napaka = Some("Prebrane strani ne morejo biti večje od vseh!".into());
+                    return None;
+                }
+            }
+
+            SpremeneljivkeKnjige::VseStrani => {
+                if vse < prebrane {
+                    self.napaka = Some("Vseh strani mora biti manj kot prebranih strani!".into());
+                    return None;
+                }
+            }
+        }
+
+        Some(Knjiga {
+            naslov: self.naslov.clone(),
+            prebrano: prebrane,
+            vse: vse,
+        })
+    }
+
+    pub fn reset(&mut self) {
+        *self = SpremeniKnjigoPopup::new();
+    }
+}
 
 impl DodajKnjigoPopup {
     pub fn new() -> Self {
@@ -69,7 +185,7 @@ impl DodajKnjigoPopup {
             }
         }
     }
-    
+
     pub fn handle_backspace(&mut self) {
         self.napaka = None;
 
@@ -161,18 +277,18 @@ impl AppState {
                 KeyCode::Tab => self.dodaj_popup.menjaj_polje(),
                 KeyCode::Backspace => self.dodaj_popup.handle_backspace(),
                 KeyCode::Char(c) => self.dodaj_popup.handle_char(c),
-                KeyCode::Enter => {
-		    match self.dodaj_popup.polje {
-			PopupPoljeDodaja::Naslov | PopupPoljeDodaja::PrebraneStrani => self.dodaj_popup.menjaj_polje(),
-			PopupPoljeDodaja::VseStrani => {
-			    if let Some(knjiga) = self.dodaj_popup.submit() {
-				self.shrani_knjigo(knjiga);
-				self.dodaj_popup_viden = false;
-				self.dodaj_popup.reset();
-			    }   
-			} 
-		    }
-		},
+                KeyCode::Enter => match self.dodaj_popup.polje {
+                    PopupPoljeDodaja::Naslov | PopupPoljeDodaja::PrebraneStrani => {
+                        self.dodaj_popup.menjaj_polje()
+                    }
+                    PopupPoljeDodaja::VseStrani => {
+                        if let Some(knjiga) = self.dodaj_popup.submit() {
+                            self.shrani_knjigo(knjiga);
+                            self.dodaj_popup_viden = false;
+                            self.dodaj_popup.reset();
+                        }
+                    }
+                },
                 KeyCode::Esc => {
                     self.dodaj_popup_viden = false;
                     self.dodaj_popup.reset();
@@ -187,7 +303,26 @@ impl AppState {
                     self.izbrisi_popup_viden = false
                 }
                 KeyCode::Char('n') => self.izbrisi_popup_viden = false,
-		KeyCode::Esc => self.izbrisi_popup_viden = false,
+                KeyCode::Esc => self.izbrisi_popup_viden = false,
+                _ => {}
+            }
+            return;
+        } else if self.spremeni_popup_viden {
+            match key {
+                KeyCode::Char(c) => self.dodaj_popup.handle_char(c),
+                KeyCode::Backspace => self.dodaj_popup.handle_backspace(),
+                KeyCode::Esc => {
+                    self.spremeni_popup_viden = false;
+                    self.spremeni_popup.reset()
+                }
+                KeyCode::Enter => {
+                    if let Some(knjiga) = self.dodaj_popup.submit() {
+                        self.shrani_knjigo(knjiga);
+                        self.dodaj_popup_viden = false;
+                        self.dodaj_popup.reset();
+                    }
+                }
+
                 _ => {}
             }
             return;
@@ -208,6 +343,22 @@ impl AppState {
                     self.izbrisi_popup_viden = true;
                     self.vrstica = i
                 }
+            }
+            KeyCode::Char('e') => {
+                if let Some(selected) = self.table_state.selected() {
+                    self.spremeni_popup.oznacena_knjiga = selected as u32;
+		    self.spremeni_popup.naslov = self.knjige[selected].naslov;
+		    self.spremeni_popup.prebrano = self.knjige[selected].prebrano.to_string();
+		    self.spremeni_popup.vse = self.knjige[selected].vse.to_string();
+                }
+		if let Some(selected) = self.table_state.selected_column() {
+		    match selected {
+			0 => self.spremeni_popup.oznaceno_polje = SpremeneljivkeKnjige::Naslov,
+			1 => self.spremeni_popup.oznaceno_polje = SpremeneljivkeKnjige::PrebraneStrani,
+			2 => self.spremeni_popup.oznaceno_polje = SpremeneljivkeKnjige::VseStrani,
+		    }
+		}
+		self.dodaj_popup_viden = true
             }
             _ => {}
         }

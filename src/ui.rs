@@ -59,7 +59,7 @@ fn rander_izpisi_knjige(frame: &mut Frame, app: &mut AppState) {
     let block = Block::default()
         .title(title)
         .title_alignment(Alignment::Center)
-        .title_bottom(" a - dodaj knjigo | d - zbrisi knjigo | j/k - gor/dol | <backspace> - nazaj ")
+        .title_bottom(" a - dodaj knjigo | d - zbrisi knjigo | e - uredi | j/k - gor/dol | <backspace> - nazaj ")
         .borders(Borders::ALL)
         .border_type(BorderType::Rounded)
         .border_style(Style::default().fg(Color::Cyan));
@@ -210,7 +210,7 @@ pub fn render_table(frame: &mut Frame, area: Rect, app: &mut AppState) {
         .style(Color::White)
         .row_highlight_style(Style::new().on_black().bold())
         .column_highlight_style(Color::Gray)
-        .cell_highlight_style(Style::new().reversed().yellow())
+        .cell_highlight_style(Style::new().reversed().light_cyan())
         .highlight_symbol("> ");
 
     frame.render_stateful_widget(table, area, &mut app.table_state);
