@@ -24,6 +24,7 @@ pub struct DodajKnjigoPopup {
     pub napaka: Option<String>,
 }
 
+#[derive(PartialEq)]
 pub enum SpremeneljivkeKnjige {
     Naslov,
     PrebraneStrani,
@@ -31,7 +32,7 @@ pub enum SpremeneljivkeKnjige {
 }
 
 pub struct SpremeniKnjigoPopup {
-    pub oznacena_knjiga: u32,
+    pub oznacena_knjiga: usize,
     pub oznaceno_polje: SpremeneljivkeKnjige,
     pub naslov: String,
     pub prebrano: String,
@@ -93,7 +94,7 @@ impl SpremeniKnjigoPopup {
     pub fn handle_backspace(&mut self) {
         self.napaka = None;
 
-        match self.polje {
+        match self.oznaceno_polje {
             SpremeneljivkeKnjige::Naslov => {
                 self.naslov.pop();
             }
@@ -309,17 +310,17 @@ impl AppState {
             return;
         } else if self.spremeni_popup_viden {
             match key {
-                KeyCode::Char(c) => self.dodaj_popup.handle_char(c),
-                KeyCode::Backspace => self.dodaj_popup.handle_backspace(),
+                KeyCode::Char(c) => self.spremeni_popup.handle_char(c),
+                KeyCode::Backspace => self.spremeni_popup.handle_backspace(),
                 KeyCode::Esc => {
                     self.spremeni_popup_viden = false;
                     self.spremeni_popup.reset()
                 }
                 KeyCode::Enter => {
-                    if let Some(knjiga) = self.dodaj_popup.submit() {
-                        self.shrani_knjigo(knjiga);
-                        self.dodaj_popup_viden = false;
-                        self.dodaj_popup.reset();
+                    if let Some(knjiga) = self.spremeni_popup.submit() {
+                        self.posodobi_knjigo(self.spremeni_popup.oznacena_knjiga, knjiga);
+                        self.spremeni_popup_viden = false;
+                        self.spremeni_popup.reset();
                     }
                 }
 
@@ -346,19 +347,23 @@ impl AppState {
             }
             KeyCode::Char('e') => {
                 if let Some(selected) = self.table_state.selected() {
-                    self.spremeni_popup.oznacena_knjiga = selected as u32;
-		    self.spremeni_popup.naslov = self.knjige[selected].naslov;
-		    self.spremeni_popup.prebrano = self.knjige[selected].prebrano.to_string();
-		    self.spremeni_popup.vse = self.knjige[selected].vse.to_string();
+                    self.spremeni_popup.oznacena_knjiga = selected;
+                    self.spremeni_popup.naslov = self.knjige[selected].naslov.clone();
+                    self.spremeni_popup.prebrano = self.knjige[selected].prebrano.to_string();
+                    self.spremeni_popup.vse = self.knjige[selected].vse.to_string();
                 }
-		if let Some(selected) = self.table_state.selected_column() {
-		    match selected {
-			0 => self.spremeni_popup.oznaceno_polje = SpremeneljivkeKnjige::Naslov,
-			1 => self.spremeni_popup.oznaceno_polje = SpremeneljivkeKnjige::PrebraneStrani,
-			2 => self.spremeni_popup.oznaceno_polje = SpremeneljivkeKnjige::VseStrani,
-		    }
-		}
-		self.dodaj_popup_viden = true
+                if let Some(selected) = self.table_state.selected_column() {
+                    match selected {
+                        0 => self.spremeni_popup.oznaceno_polje = SpremeneljivkeKnjige::Naslov,
+                        1 => {
+                            self.spremeni_popup.oznaceno_polje =
+                                SpremeneljivkeKnjige::PrebraneStrani
+                        }
+                        2 => self.spremeni_popup.oznaceno_polje = SpremeneljivkeKnjige::VseStrani,
+                        _ => {}
+                    }
+                }
+                self.spremeni_popup_viden = true
             }
             _ => {}
         }
